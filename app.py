@@ -54,6 +54,11 @@ def submit_entry():
     night_start_date = get_night_start(now).isoformat()
     holding, total_admits, total_left = calculate_holding_for(night_start_date)
 
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT time_slot, admits, left_count, holding FROM entries WHERE date = %s ORDER BY time_slot", (night_start_date,))
+            log_rows = c.fetchall()
+
     if request.method == 'POST':
         admits = int(request.form['admits'])
         left_count = int(request.form['left_count'])
@@ -84,7 +89,8 @@ def submit_entry():
         return redirect(url_for('submit_entry'))
 
     return render_template('submit.html', times=times, default_time=default_time,
-                           holding=holding, total_admits=total_admits, total_left=total_left)
+                           holding=holding, total_admits=total_admits,
+                           total_left=total_left, log_rows=log_rows)
 
 @app.route('/confirm', methods=['POST'])
 def confirm_entry():
