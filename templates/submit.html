@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Submit Entry</title></head>
+<body>
+  <h1>Submit Entry</h1>
+  <form method="POST">
+    <label>Time Slot:
+      <select name="time_slot">
+        {% for t in times %}
+          <option value="{{ t }}">{{ t }}</option>
+        {% endfor %}
+      </select>
+    </label><br><br>
+    <label>Admits: <input type="number" name="admits" required></label><br><br>
+    <label>Guests Left: <input type="number" name="left" required></label><br><br>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>

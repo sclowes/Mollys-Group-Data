@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>View Entries</title></head>
+<body>
+  <h1>View Entries</h1>
+  <form method="POST">
+    <label>Select Date: <input type="date" name="date" required></label>
+    <button type="submit">View</button>
+  </form>
+
+  {% if selected_date %}
+    <h2>Entries for {{ selected_date }}</h2>
+    {% if rows %}
+      <table border="1" cellpadding="6">
+        <tr><th>Time Slot</th><th>Admits</th><th>Guests Left</th><th>Holding</th></tr>
+        {% for row in rows %}
+          <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>No admits recorded for this date.</p>
+    {% endif %}
+  {% endif %}
+</body>
+</html>
