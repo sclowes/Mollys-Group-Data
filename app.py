@@ -17,7 +17,7 @@ def init_db():
                             date TEXT,
                             time_slot TEXT,
                             admits INTEGER,
-                            left INTEGER,
+                            left_count INTEGER,
                             holding INTEGER,
                             timestamp TEXT
                         )''')
