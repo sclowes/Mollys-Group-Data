@@ -40,7 +40,7 @@ def calculate_holding_for(date_str):
             result = c.fetchone()
             total_admits = result[0] or 0
             total_left = result[1] or 0
-            return total_admits - total_left
+            return total_admits - total_left, total_admits, total_left
 
 @app.route('/')
 def index():
@@ -51,14 +51,15 @@ def submit_entry():
     times = [f"{h:02}:{m:02}" for h in range(15, 24) for m in (0, 30)] + [f"{h:02}:{m:02}" for h in range(0, 7) for m in (0, 30)]
     now = datetime.now()
     default_time = get_current_time_slot()
+    night_start_date = get_night_start(now).isoformat()
+    holding, total_admits, total_left = calculate_holding_for(night_start_date)
 
     if request.method == 'POST':
         admits = int(request.form['admits'])
         left_count = int(request.form['left_count'])
         time_slot = request.form['time_slot']
 
-        night_start_date = get_night_start(now).isoformat()
-        new_holding = calculate_holding_for(night_start_date) + admits - left_count
+        new_holding = holding + admits - left_count
 
         with get_connection() as conn:
             with conn.cursor() as c:
@@ -82,7 +83,8 @@ def submit_entry():
 
         return redirect(url_for('submit_entry'))
 
-    return render_template('submit.html', times=times, default_time=default_time)
+    return render_template('submit.html', times=times, default_time=default_time,
+                           holding=holding, total_admits=total_admits, total_left=total_left)
 
 @app.route('/confirm', methods=['POST'])
 def confirm_entry():
@@ -99,7 +101,7 @@ def confirm_entry():
         admits = int(request.form['existing_admits'])
         left_count = int(request.form['existing_left'])
 
-    holding = calculate_holding_for(night_start_date) + admits - left_count
+    holding = calculate_holding_for(night_start_date)[0] + admits - left_count
 
     with get_connection() as conn:
         with conn.cursor() as c:
