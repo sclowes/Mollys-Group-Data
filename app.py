@@ -1,23 +1,27 @@
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime, time, timedelta
-import sqlite3
+import psycopg2
+import os
 
 app = Flask(__name__)
-DB_PATH = 'database.db'
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_connection():
+    return psycopg2.connect(DATABASE_URL, sslmode='require')
 
 def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS entries (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        date TEXT,
-                        time_slot TEXT,
-                        admits INTEGER,
-                        left INTEGER,
-                        holding INTEGER,
-                        timestamp TEXT
-                    )''')
-        conn.commit()
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute('''CREATE TABLE IF NOT EXISTS entries (
+                            id SERIAL PRIMARY KEY,
+                            date TEXT,
+                            time_slot TEXT,
+                            admits INTEGER,
+                            left INTEGER,
+                            holding INTEGER,
+                            timestamp TEXT
+                        )''')
+            conn.commit()
 
 def get_night_start(target_datetime):
     if target_datetime.time() < time(6, 0):
@@ -25,13 +29,13 @@ def get_night_start(target_datetime):
     return target_datetime.date()
 
 def calculate_holding_for(date_str):
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("SELECT SUM(admits), SUM(left) FROM entries WHERE date = ?", (date_str,))
-        result = c.fetchone()
-        total_admits = result[0] or 0
-        total_left = result[1] or 0
-        return total_admits - total_left
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT SUM(admits), SUM(left) FROM entries WHERE date = %s", (date_str,))
+            result = c.fetchone()
+            total_admits = result[0] or 0
+            total_left = result[1] or 0
+            return total_admits - total_left
 
 @app.route('/')
 def index():
@@ -50,12 +54,12 @@ def submit_entry():
         night_start_date = get_night_start(now)
         holding = calculate_holding_for(night_start_date.isoformat()) + admits - left
 
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('''INSERT INTO entries (date, time_slot, admits, left, holding, timestamp)
-                         VALUES (?, ?, ?, ?, ?, ?)''',
-                      (night_start_date.isoformat(), time_slot, admits, left, holding, now.isoformat()))
-            conn.commit()
+        with get_connection() as conn:
+            with conn.cursor() as c:
+                c.execute('''INSERT INTO entries (date, time_slot, admits, left, holding, timestamp)
+                             VALUES (%s, %s, %s, %s, %s, %s)''',
+                          (night_start_date.isoformat(), time_slot, admits, left, holding, now.isoformat()))
+                conn.commit()
 
         return redirect(url_for('submit_entry'))
 
@@ -68,10 +72,10 @@ def view_entries():
 
     if request.method == 'POST':
         selected_date = request.form['date']
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute("SELECT time_slot, admits, left, holding FROM entries WHERE date = ? ORDER BY time_slot", (selected_date,))
-            rows = c.fetchall()
+        with get_connection() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT time_slot, admits, left, holding FROM entries WHERE date = %s ORDER BY time_slot", (selected_date,))
+                rows = c.fetchall()
 
     return render_template('view.html', rows=rows, selected_date=selected_date)
 
