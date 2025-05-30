@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confirm Entry</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    button { padding: 10px; width: 48%; border: none; border-radius: 5px; margin: 5px; cursor: pointer; font-weight: bold; }
+    .new { background-color: #007bff; color: white; }
+    .existing { background-color: #28a745; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Duplicate Entry Detected</h1>
+    <p>There is already an entry for <strong>{{ time_slot }}</strong> on <strong>{{ date }}</strong>.</p>
+    <p>Please choose which data you would like to keep:</p>
+
+    <form method="POST" action="/confirm">
+      <input type="hidden" name="entry_id" value="{{ entry_id }}">
+      <input type="hidden" name="time_slot" value="{{ time_slot }}">
+      <input type="hidden" name="date" value="{{ date }}">
+      <input type="hidden" name="existing_admits" value="{{ existing.admits }}">
+      <input type="hidden" name="existing_left" value="{{ existing.left }}">
+      <input type="hidden" name="new_admits" value="{{ new.admits }}">
+      <input type="hidden" name="new_left" value="{{ new.left }}">
+
+      <table>
+        <tr>
+          <th></th>
+          <th>Admits</th>
+          <th>Guests Left</th>
+        </tr>
+        <tr>
+          <td>Existing</td>
+          <td>{{ existing.admits }}</td>
+          <td>{{ existing.left }}</td>
+        </tr>
+        <tr>
+          <td>New</td>
+          <td>{{ new.admits }}</td>
+          <td>{{ new.left }}</td>
+        </tr>
+      </table>
+
+      <div style="text-align:center;">
+        <button class="existing" name="choice" value="existing">Keep Existing</button>
+        <button class="new" name="choice" value="new">Use New Entry</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

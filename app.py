@@ -28,6 +28,11 @@ def get_night_start(target_datetime):
         target_datetime -= timedelta(days=1)
     return target_datetime.date()
 
+def get_current_time_slot():
+    now = datetime.now()
+    minute = 30 if now.minute >= 30 else 0
+    return f"{now.hour:02}:{minute:02}"
+
 def calculate_holding_for(date_str):
     with get_connection() as conn:
         with conn.cursor() as c:
@@ -44,26 +49,65 @@ def index():
 @app.route('/submit', methods=['GET', 'POST'])
 def submit_entry():
     times = [f"{h:02}:{m:02}" for h in range(15, 24) for m in (0, 30)] + [f"{h:02}:{m:02}" for h in range(0, 7) for m in (0, 30)]
+    now = datetime.now()
+    default_time = get_current_time_slot()
 
     if request.method == 'POST':
         admits = int(request.form['admits'])
-        left = int(request.form['left_count'])
+        left_count = int(request.form['left_count'])
         time_slot = request.form['time_slot']
 
-        now = datetime.now()
-        night_start_date = get_night_start(now)
-        holding = calculate_holding_for(night_start_date.isoformat()) + admits - left
+        night_start_date = get_night_start(now).isoformat()
+        new_holding = calculate_holding_for(night_start_date) + admits - left_count
 
         with get_connection() as conn:
             with conn.cursor() as c:
+                c.execute("SELECT id, admits, left_count FROM entries WHERE date = %s AND time_slot = %s", (night_start_date, time_slot))
+                existing = c.fetchone()
+
+                if existing:
+                    current_id, current_admits, current_left = existing
+                    return render_template('confirm.html',
+                                           time_slot=time_slot,
+                                           existing={'admits': current_admits, 'left': current_left},
+                                           new={'admits': admits, 'left': left_count},
+                                           date=night_start_date,
+                                           holding=new_holding,
+                                           entry_id=current_id)
+
                 c.execute('''INSERT INTO entries (date, time_slot, admits, left_count, holding, timestamp)
                              VALUES (%s, %s, %s, %s, %s, %s)''',
-                          (night_start_date.isoformat(), time_slot, admits, left, holding, now.isoformat()))
+                          (night_start_date, time_slot, admits, left_count, new_holding, now.isoformat()))
                 conn.commit()
 
         return redirect(url_for('submit_entry'))
 
-    return render_template('submit.html', times=times)
+    return render_template('submit.html', times=times, default_time=default_time)
+
+@app.route('/confirm', methods=['POST'])
+def confirm_entry():
+    selection = request.form['choice']
+    entry_id = int(request.form['entry_id'])
+    time_slot = request.form['time_slot']
+    night_start_date = request.form['date']
+    now = datetime.now()
+
+    if selection == 'new':
+        admits = int(request.form['new_admits'])
+        left_count = int(request.form['new_left'])
+    else:
+        admits = int(request.form['existing_admits'])
+        left_count = int(request.form['existing_left'])
+
+    holding = calculate_holding_for(night_start_date) + admits - left_count
+
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute('''UPDATE entries SET admits = %s, left_count = %s, holding = %s, timestamp = %s WHERE id = %s''',
+                      (admits, left_count, holding, now.isoformat(), entry_id))
+            conn.commit()
+
+    return redirect(url_for('submit_entry'))
 
 @app.route('/view', methods=['GET', 'POST'])
 def view_entries():
