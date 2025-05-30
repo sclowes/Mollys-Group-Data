@@ -31,7 +31,7 @@ def get_night_start(target_datetime):
 def calculate_holding_for(date_str):
     with get_connection() as conn:
         with conn.cursor() as c:
-            c.execute("SELECT SUM(admits), SUM(left) FROM entries WHERE date = %s", (date_str,))
+            c.execute("SELECT SUM(admits), SUM(left_count) FROM entries WHERE date = %s", (date_str,))
             result = c.fetchone()
             total_admits = result[0] or 0
             total_left = result[1] or 0
