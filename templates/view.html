@@ -1,6 +1,19 @@
+
 <!DOCTYPE html>
 <html>
-<head><title>View Entries</title></head>
+<head>
+  <title>View Entries</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+    form, table { background: #fff; padding: 20px; border-radius: 8px; max-width: 700px; margin: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; }
+    input[type=date] { width: 70%; padding: 8px; }
+    button { padding: 8px 16px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #0056b3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; text-align: center; border: 1px solid #ccc; }
+  </style>
+</head>
 <body>
   <h1>View Entries</h1>
   <form method="POST">
@@ -11,14 +24,14 @@
   {% if selected_date %}
     <h2>Entries for {{ selected_date }}</h2>
     {% if rows %}
-      <table border="1" cellpadding="6">
+      <table>
         <tr><th>Time Slot</th><th>Admits</th><th>Guests Left</th><th>Holding</th></tr>
         {% for row in rows %}
           <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td></tr>
         {% endfor %}
       </table>
     {% else %}
-      <p>No admits recorded for this date.</p>
+      <p style="text-align:center;">No admits recorded for this date.</p>
     {% endif %}
   {% endif %}
 </body>
