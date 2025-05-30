@@ -47,7 +47,7 @@ def submit_entry():
 
     if request.method == 'POST':
         admits = int(request.form['admits'])
-        left = int(request.form['left'])
+        left = int(request.form['left_count'])
         time_slot = request.form['time_slot']
 
         now = datetime.now()
@@ -56,7 +56,7 @@ def submit_entry():
 
         with get_connection() as conn:
             with conn.cursor() as c:
-                c.execute('''INSERT INTO entries (date, time_slot, admits, left, holding, timestamp)
+                c.execute('''INSERT INTO entries (date, time_slot, admits, left_count, holding, timestamp)
                              VALUES (%s, %s, %s, %s, %s, %s)''',
                           (night_start_date.isoformat(), time_slot, admits, left, holding, now.isoformat()))
                 conn.commit()
@@ -74,7 +74,7 @@ def view_entries():
         selected_date = request.form['date']
         with get_connection() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT time_slot, admits, left, holding FROM entries WHERE date = %s ORDER BY time_slot", (selected_date,))
+                c.execute("SELECT time_slot, admits, left_count, holding FROM entries WHERE date = %s ORDER BY time_slot", (selected_date,))
                 rows = c.fetchall()
 
     return render_template('view.html', rows=rows, selected_date=selected_date)
